@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RotorVision — a rotor-powered 3D engine</title>
+    <style>
+      :root {
+        --bg: #070a12;
+        --panel: rgba(16, 22, 36, 0.82);
+        --edge: rgba(120, 150, 200, 0.22);
+        --text: #c9d4e8;
+        --dim: #6b7791;
+        --accent: #5ce0d6;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        height: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+        overflow: hidden;
+      }
+      #view {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        display: block;
+        touch-action: none;
+        cursor: grab;
+      }
+      #view:active {
+        cursor: grabbing;
+      }
+      .panel {
+        position: fixed;
+        background: var(--panel);
+        border: 1px solid var(--edge);
+        border-radius: 10px;
+        backdrop-filter: blur(8px);
+      }
+      #hud {
+        top: 18px;
+        left: 18px;
+        padding: 16px 18px;
+        min-width: 256px;
+      }
+      #hud h1 {
+        font-size: 15px;
+        letter-spacing: 0.5px;
+        color: #fff;
+        font-weight: 600;
+      }
+      #hud h1 span {
+        color: var(--accent);
+      }
+      #hud .tagline {
+        font-size: 11px;
+        color: var(--dim);
+        margin: 3px 0 13px;
+        line-height: 1.5;
+      }
+      .readout {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 4px 14px;
+        font-size: 12px;
+      }
+      .readout .label {
+        color: var(--dim);
+      }
+      .readout .value {
+        text-align: right;
+        color: var(--text);
+      }
+      .rotor-line {
+        margin: 12px 0 4px;
+        font-size: 11px;
+        color: var(--dim);
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+      }
+      .rotor-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 5px 14px;
+        font-size: 12px;
+      }
+      .rotor-grid .term {
+        display: flex;
+        justify-content: space-between;
+      }
+      .rotor-grid .basis {
+        color: var(--accent);
+      }
+      .rotor-grid .basis.scalar {
+        color: #e7b864;
+      }
+      .divider {
+        height: 1px;
+        background: var(--edge);
+        margin: 13px 0;
+      }
+      #controls {
+        bottom: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 9px;
+        display: flex;
+        gap: 8px;
+      }
+      button {
+        font-family: inherit;
+        font-size: 12px;
+        color: var(--text);
+        background: rgba(90, 120, 170, 0.16);
+        border: 1px solid var(--edge);
+        border-radius: 7px;
+        padding: 8px 15px;
+        cursor: pointer;
+        transition: background 0.12s, color 0.12s;
+      }
+      button:hover {
+        background: rgba(120, 160, 220, 0.3);
+      }
+      button.active {
+        background: var(--accent);
+        color: #04201e;
+        border-color: var(--accent);
+      }
+      button.off {
+        color: var(--dim);
+      }
+      #hint {
+        bottom: 18px;
+        right: 18px;
+        padding: 11px 14px;
+        font-size: 11px;
+        color: var(--dim);
+        line-height: 1.6;
+        max-width: 220px;
+      }
+      #hint b {
+        color: var(--text);
+        font-weight: 500;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="view"></canvas>
+
+    <div id="hud" class="panel">
+      <h1>Rotor<span>Vision</span></h1>
+      <p class="tagline">
+        A 3D engine that rotates with geometric-algebra rotors — no quaternions.
+      </p>
+
+      <div class="readout">
+        <span class="label">fps</span>
+        <span class="value"><span id="hud-fps">0</span></span>
+        <span class="label">triangles</span>
+        <span class="value"><span id="hud-faces">0</span></span>
+      </div>
+
+      <div class="rotor-line">Knot orientation rotor</div>
+      <div class="rotor-grid">
+        <div class="term">
+          <span class="basis scalar">scalar</span><span id="hud-a">+1.0000</span>
+        </div>
+        <div class="term">
+          <span class="basis">e₂₃</span><span id="hud-b23">+0.0000</span>
+        </div>
+        <div class="term">
+          <span class="basis">e₃₁</span><span id="hud-b31">+0.0000</span>
+        </div>
+        <div class="term">
+          <span class="basis">e₁₂</span><span id="hud-b12">+0.0000</span>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="readout">
+        <span class="label">rotation angle</span>
+        <span class="value"><span id="hud-angle">0.0°</span></span>
+        <span class="label">rotation axis</span>
+        <span class="value"><span id="hud-axis">(0, 1, 0)</span></span>
+      </div>
+    </div>
+
+    <div id="controls" class="panel">
+      <button id="btn-pause">Pause</button>
+      <button id="btn-wireframe">Wireframe</button>
+      <button id="btn-fog">Fog</button>
+      <button id="btn-orbit">Auto-orbit</button>
+    </div>
+
+    <div id="hint" class="panel">
+      <b>Drag</b> to orbit the camera · <b>scroll</b> to zoom.<br />
+      Every spin here is a rotor sandwich product <b>v′ = R v R~</b>.
+    </div>
+
+    <script type="module" src="./src/demo.js"></script>
+  </body>
+</html>
