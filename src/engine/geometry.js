@@ -217,22 +217,35 @@ export const Geometry = {
     return new Mesh(vertices, faces);
   },
 
-  /** A flat wireframe grid on the y = `height` plane, drawn as line segments. */
+  /**
+   * A flat wireframe grid on the y = `height` plane, drawn as line segments.
+   *
+   * The grid is built as a lattice of short edges between every adjacent pair
+   * of lattice points rather than as long lines across the whole plane. Short
+   * segments make their midpoint depth a faithful proxy for their actual
+   * depth, so the painter's-algorithm sort lands them in the right place
+   * relative to objects above the floor.
+   */
   grid(size = 10, divisions = 10, height = 0) {
     const vertices = [];
     const lines = [];
     const step = size / divisions;
     const half = size / 2;
-    for (let i = 0; i <= divisions; i++) {
-      const t = -half + i * step;
-      const base = vertices.length;
-      vertices.push(
-        new Vec3(t, height, -half),
-        new Vec3(t, height, half),
-        new Vec3(-half, height, t),
-        new Vec3(half, height, t),
-      );
-      lines.push([base, base + 1], [base + 2, base + 3]);
+    const stride = divisions + 1;
+    for (let r = 0; r <= divisions; r++) {
+      for (let c = 0; c <= divisions; c++) {
+        vertices.push(new Vec3(-half + c * step, height, -half + r * step));
+      }
+    }
+    for (let r = 0; r <= divisions; r++) {
+      for (let c = 0; c < divisions; c++) {
+        lines.push([r * stride + c, r * stride + c + 1]);
+      }
+    }
+    for (let c = 0; c <= divisions; c++) {
+      for (let r = 0; r < divisions; r++) {
+        lines.push([r * stride + c, (r + 1) * stride + c]);
+      }
     }
     return new Mesh(vertices, [], lines);
   },

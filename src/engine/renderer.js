@@ -98,13 +98,18 @@ export class Renderer {
       }
 
       for (const [i, j] of mesh.lines) {
-        const c0 = cam[i];
-        const c1 = cam[j];
-        if (c0.z > -near || c1.z > -near) continue;
-        const depth = (c0.z + c1.z) / 2;
+        let a = cam[i];
+        let b = cam[j];
+        // Reject the segment only if *both* endpoints are on the wrong side
+        // of the near plane; otherwise clip the offending endpoint to the
+        // plane so segments that straddle it still render their visible part.
+        if (a.z > -near && b.z > -near) continue;
+        if (a.z > -near) a = clipToNearPlane(a, b, near);
+        else if (b.z > -near) b = clipToNearPlane(b, a, near);
+        const depth = (a.z + b.z) / 2;
         primitives.push({
           kind: "line",
-          points: [project(c0), project(c1)],
+          points: [project(a), project(b)],
           depth,
           color: rgbToCss(applyFog(mat.color, depth, fogRGB, this.fog, camera.far)),
         });
@@ -165,6 +170,19 @@ export class Renderer {
     };
     return rgbToCss(applyFog(lit, depth, fogRGB, this.fog, 200));
   }
+}
+
+/**
+ * Move `outside` along the segment toward `inside` until it lands on the near
+ * plane (z = -near). The two endpoints must straddle the plane.
+ */
+function clipToNearPlane(outside, inside, near) {
+  const t = (-near - outside.z) / (inside.z - outside.z);
+  return new Vec3(
+    outside.x + t * (inside.x - outside.x),
+    outside.y + t * (inside.y - outside.y),
+    -near,
+  );
 }
 
 function applyFog(color, depth, fogRGB, enabled, far) {

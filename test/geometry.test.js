@@ -90,7 +90,15 @@ test("torus knot closes smoothly with no holonomy twist at the seam", () => {
 });
 
 test("grid is line geometry with no triangles", () => {
-  const grid = Geometry.grid(10, 5);
+  const div = 5;
+  const grid = Geometry.grid(10, div);
   assert.equal(grid.faces.length, 0, "no faces");
-  assert.equal(grid.lines.length, 12, "(5+1) lines in each of 2 directions");
+  // (divisions + 1) rows/columns × divisions short segments × two directions.
+  assert.equal(grid.lines.length, 2 * (div + 1) * div, "short segment count");
+  // Every segment connects adjacent lattice points one step apart.
+  const step = 10 / div;
+  for (const [i, j] of grid.lines) {
+    const d = grid.vertices[i].distanceTo(grid.vertices[j]);
+    assert.ok(Math.abs(d - step) < 1e-9, `short segment length ${d}`);
+  }
 });
