@@ -63,6 +63,32 @@ test("torus knot builds a closed, outward-wound tube", () => {
   }
 });
 
+test("torus knot closes smoothly with no holonomy twist at the seam", () => {
+  // Each tube cross-section meets its neighbour with edges of comparable
+  // length. If parallel transport's holonomy isn't compensated for, the seam
+  // (where the last sample wraps to the first) connects each vertex j to the
+  // diametrically-opposite vertex on the other ring, blowing those edges up.
+  const N = 120;
+  const T = 12;
+  const knot = Geometry.torusKnot(1, 0.3, N, T, 2, 3);
+  const edge = (i, j, ii, jj) =>
+    knot.vertices[i * T + j].distanceTo(knot.vertices[ii * T + jj]);
+
+  let inner = 0;
+  for (let i = 0; i < N - 1; i++)
+    for (let j = 0; j < T; j++) inner += edge(i, j, i + 1, j);
+  inner /= (N - 1) * T;
+
+  let seam = 0;
+  for (let j = 0; j < T; j++) seam += edge(N - 1, j, 0, j);
+  seam /= T;
+
+  assert.ok(
+    seam < inner * 1.5,
+    `seam edges (avg ${seam.toFixed(4)}) much longer than inner edges (avg ${inner.toFixed(4)})`,
+  );
+});
+
 test("grid is line geometry with no triangles", () => {
   const grid = Geometry.grid(10, 5);
   assert.equal(grid.faces.length, 0, "no faces");

@@ -48,8 +48,40 @@
       #hud {
         top: 18px;
         left: 18px;
-        padding: 16px 18px;
         min-width: 256px;
+        max-width: calc(100vw - 36px);
+      }
+      .hud__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        width: 100%;
+        padding: 14px 16px;
+        background: transparent;
+        border: none;
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+        text-align: left;
+        user-select: none;
+      }
+      .hud__chevron {
+        color: var(--dim);
+        font-size: 11px;
+        transition: transform 0.18s ease;
+      }
+      #hud.hud--collapsed .hud__chevron {
+        transform: rotate(-90deg);
+      }
+      #hud.hud--collapsed .hud__body {
+        display: none;
+      }
+      #hud.hud--collapsed {
+        min-width: 0;
+      }
+      .hud__body {
+        padding: 0 18px 16px;
       }
       #hud h1 {
         font-size: 15px;
@@ -63,7 +95,7 @@
       #hud .tagline {
         font-size: 11px;
         color: var(--dim);
-        margin: 3px 0 13px;
+        margin: 0 0 13px;
         line-height: 1.5;
       }
       .readout {
@@ -150,47 +182,86 @@
         color: var(--text);
         font-weight: 500;
       }
+
+      @media (max-width: 720px) {
+        #hud {
+          top: 10px;
+          left: 10px;
+        }
+        .hud__header {
+          padding: 11px 13px;
+        }
+        .hud__body {
+          padding: 0 13px 12px;
+        }
+        #hud .tagline {
+          display: none;
+        }
+        #hint {
+          display: none;
+        }
+        #controls {
+          bottom: 10px;
+          padding: 6px;
+          gap: 6px;
+        }
+        #controls button {
+          font-size: 11px;
+          padding: 7px 10px;
+        }
+      }
     </style>
   </head>
   <body>
     <canvas id="view"></canvas>
 
     <div id="hud" class="panel">
-      <h1>Rotor<span>Vision</span></h1>
-      <p class="tagline">
-        A 3D engine that rotates with geometric-algebra rotors — no quaternions.
-      </p>
+      <button
+        class="hud__header"
+        id="hud-toggle"
+        type="button"
+        aria-expanded="true"
+        aria-controls="hud-body"
+      >
+        <h1>Rotor<span>Vision</span></h1>
+        <span class="hud__chevron" aria-hidden="true">▾</span>
+      </button>
+      <div class="hud__body" id="hud-body">
+        <p class="tagline">
+          A 3D engine that rotates with geometric-algebra rotors — no quaternions.
+        </p>
 
-      <div class="readout">
-        <span class="label">fps</span>
-        <span class="value"><span id="hud-fps">0</span></span>
-        <span class="label">triangles</span>
-        <span class="value"><span id="hud-faces">0</span></span>
-      </div>
+        <div class="readout">
+          <span class="label">fps</span>
+          <span class="value"><span id="hud-fps">0</span></span>
+          <span class="label">triangles</span>
+          <span class="value"><span id="hud-faces">0</span></span>
+        </div>
 
-      <div class="rotor-line">Knot orientation rotor</div>
-      <div class="rotor-grid">
-        <div class="term">
-          <span class="basis scalar">scalar</span><span id="hud-a">+1.0000</span>
+        <div class="rotor-line">Knot orientation rotor</div>
+        <div class="rotor-grid">
+          <div class="term">
+            <span class="basis scalar">scalar</span><span id="hud-a">+1.0000</span>
+          </div>
+          <div class="term">
+            <span class="basis">e₂₃</span><span id="hud-b23">+0.0000</span>
+          </div>
+          <div class="term">
+            <span class="basis">e₃₁</span><span id="hud-b31">+0.0000</span>
+          </div>
+          <div class="term">
+            <span class="basis">e₁₂</span><span id="hud-b12">+0.0000</span>
+          </div>
         </div>
-        <div class="term">
-          <span class="basis">e₂₃</span><span id="hud-b23">+0.0000</span>
-        </div>
-        <div class="term">
-          <span class="basis">e₃₁</span><span id="hud-b31">+0.0000</span>
-        </div>
-        <div class="term">
-          <span class="basis">e₁₂</span><span id="hud-b12">+0.0000</span>
-        </div>
-      </div>
 
-      <div class="divider"></div>
+        <div class="divider"></div>
 
-      <div class="readout">
-        <span class="label">rotation angle</span>
-        <span class="value"><span id="hud-angle">0.0°</span></span>
-        <span class="label">rotation axis</span>
-        <span class="value"><span id="hud-axis">(0, 1, 0)</span></span>
+        <div class="readout">
+          <span class="label">rotation angle</span>
+          <span class="value"><span id="hud-angle">0.0°</span></span>
+          <span class="label">rotation axis</span>
+          <span class="value"><span id="hud-axis">(0, 1, 0)</span></span>
+        </div>
       </div>
     </div>
 
