@@ -5,6 +5,7 @@ import { Camera } from "../src/engine/camera.js";
 import { Scene } from "../src/engine/scene.js";
 import { Object3D } from "../src/engine/object3d.js";
 import { Geometry } from "../src/engine/geometry.js";
+import { Mesh } from "../src/engine/mesh.js";
 import { Engine } from "../src/engine/engine.js";
 
 /**
@@ -112,6 +113,37 @@ test("an empty scene still paints the background without error", () => {
     engine.step(0);
     assert.equal(engine.renderer.stats.drawn, 0, "nothing to draw");
     assert.ok(canvas.ctx.calls.fillRect > 0, "background still painted");
+  });
+});
+
+test("lines that straddle the near plane are clipped, not dropped", () => {
+  withWindow(() => {
+    const canvas = mockCanvas();
+    const camera = new Camera({ position: new Vec3(0, 0, 0), near: 0.1 });
+    const scene = new Scene({ camera });
+    // One endpoint sits behind the camera, the other well in front. The
+    // segment crosses the near plane and should still render its visible part.
+    const mesh = new Mesh([new Vec3(0, 0, 5), new Vec3(0, 0, -10)], [], [[0, 1]]);
+    scene.add(new Object3D({ mesh, material: { color: { r: 200, g: 200, b: 200 } } }));
+    const engine = new Engine(canvas, { scene });
+    engine.step(0);
+    assert.ok(
+      canvas.ctx.calls.stroke > 0,
+      "the segment's visible portion was drawn",
+    );
+  });
+});
+
+test("lines wholly behind the camera are dropped", () => {
+  withWindow(() => {
+    const canvas = mockCanvas();
+    const camera = new Camera({ position: new Vec3(0, 0, 0), near: 0.1 });
+    const scene = new Scene({ camera });
+    const mesh = new Mesh([new Vec3(0, 0, 5), new Vec3(0, 0, 8)], [], [[0, 1]]);
+    scene.add(new Object3D({ mesh, material: { color: { r: 200, g: 200, b: 200 } } }));
+    const engine = new Engine(canvas, { scene });
+    engine.step(0);
+    assert.equal(canvas.ctx.calls.stroke, 0, "behind-camera line not drawn");
   });
 });
 
