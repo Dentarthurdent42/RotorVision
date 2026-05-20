@@ -94,7 +94,13 @@ export class Renderer {
         const depth = (c0.z + c1.z + c2.z) / 3;
         const points = [project(c0), project(c1), project(c2)];
         const color = this._shade(normal, mat.color, light, scene.ambient, depth, fogRGB);
-        primitives.push({ kind: wireframe ? "wire" : "fill", points, depth, color });
+        primitives.push({
+          kind: wireframe ? "wire" : "fill",
+          points,
+          depth,
+          color,
+          renderOrder: mat.renderOrder ?? 0,
+        });
       }
 
       for (const [i, j] of mesh.lines) {
@@ -112,12 +118,19 @@ export class Renderer {
           points: [project(a), project(b)],
           depth,
           color: rgbToCss(applyFog(mat.color, depth, fogRGB, this.fog, camera.far)),
+          renderOrder: mat.renderOrder ?? 0,
         });
       }
     }
 
-    // Painter's algorithm: farthest (most negative camera z) first.
-    primitives.sort((a, b) => a.depth - b.depth);
+    // Painter's algorithm: lower-renderOrder layers first, and within each
+    // layer the farthest (most negative camera z) primitive first. The layer
+    // key is the escape hatch for cases where two primitives have overlapping
+    // depth ranges yet a clear front/back relationship — e.g. a floor that
+    // should sit behind every solid object even when their depths interleave.
+    primitives.sort(
+      (a, b) => a.renderOrder - b.renderOrder || a.depth - b.depth,
+    );
     this.stats.drawn = primitives.length;
 
     for (const prim of primitives) {

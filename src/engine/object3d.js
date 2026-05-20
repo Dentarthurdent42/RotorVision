@@ -21,6 +21,12 @@ export class Object3D {
       color: { r: 200, g: 200, b: 210 },
       wireframe: false,
       doubleSided: false,
+      // Painter's pass layer. Lower-renderOrder primitives are drawn first,
+      // regardless of their depth; within a layer the usual back-to-front
+      // depth sort still applies. The escape hatch when two primitives have
+      // overlapping depth ranges yet a clear logical front/back relationship
+      // (a floor sits behind every object, a HUD overlay sits in front).
+      renderOrder: 0,
       ...options.material,
     };
 

@@ -41,7 +41,15 @@ scene.add(
   new Object3D({
     name: "grid",
     mesh: Geometry.grid(48, 24, -4.2),
-    material: { color: { r: 58, g: 84, b: 120 }, wireframe: true },
+    // renderOrder: -1 forces the floor to paint before any solid object, so
+    // its lines never bleed through holes in objects whose depth ranges
+    // straddle the floor's depth (the donut hole of the knot is the obvious
+    // failure case for plain painter's-algorithm sorting).
+    material: {
+      color: { r: 58, g: 84, b: 120 },
+      wireframe: true,
+      renderOrder: -1,
+    },
   }),
 );
 

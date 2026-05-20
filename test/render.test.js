@@ -16,8 +16,10 @@ import { Engine } from "../src/engine/engine.js";
  */
 function mockContext() {
   const calls = { fill: 0, stroke: 0, fillRect: 0 };
-  return {
+  const sequence = []; // ordered record of fill/stroke calls + their colour
+  const ctx = {
     calls,
+    sequence,
     fillStyle: "",
     strokeStyle: "",
     lineWidth: 1,
@@ -34,11 +36,14 @@ function mockContext() {
     lineTo() {},
     fill() {
       calls.fill++;
+      sequence.push({ op: "fill", style: ctx.fillStyle });
     },
     stroke() {
       calls.stroke++;
+      sequence.push({ op: "stroke", style: ctx.strokeStyle });
     },
   };
+  return ctx;
 }
 
 function mockCanvas(width = 800, height = 600) {
@@ -144,6 +149,50 @@ test("lines wholly behind the camera are dropped", () => {
     const engine = new Engine(canvas, { scene });
     engine.step(0);
     assert.equal(canvas.ctx.calls.stroke, 0, "behind-camera line not drawn");
+  });
+});
+
+test("a lower renderOrder draws first even when its depth would sort later", () => {
+  withWindow(() => {
+    const canvas = mockCanvas();
+    // Place a triangle behind the camera focus, so it would normally draw
+    // last; the line, though far closer to the camera, is given a lower
+    // renderOrder so it must still be drawn *before* the triangle.
+    const camera = new Camera({ position: new Vec3(0, 0, 10), near: 0.1 });
+    const scene = new Scene({ camera });
+
+    const triMesh = new Mesh(
+      [new Vec3(-1, -1, 0), new Vec3(1, -1, 0), new Vec3(0, 1, 0)],
+      [[0, 1, 2]],
+      [],
+    );
+    scene.add(
+      new Object3D({ mesh: triMesh, material: { color: { r: 200, g: 0, b: 0 } } }),
+    );
+
+    const lineMesh = new Mesh(
+      [new Vec3(-0.5, 0, 5), new Vec3(0.5, 0, 5)],
+      [],
+      [[0, 1]],
+    );
+    scene.add(
+      new Object3D({
+        mesh: lineMesh,
+        material: { color: { r: 0, g: 0, b: 200 }, renderOrder: -1 },
+      }),
+    );
+
+    const engine = new Engine(canvas, { scene });
+    engine.step(0);
+
+    const seq = canvas.ctx.sequence;
+    const firstStroke = seq.findIndex((s) => s.op === "stroke");
+    const firstFill = seq.findIndex((s) => s.op === "fill");
+    assert.ok(firstStroke >= 0 && firstFill >= 0, "both primitives drew");
+    assert.ok(
+      firstStroke < firstFill,
+      `renderOrder layered the line first (stroke at ${firstStroke}, fill at ${firstFill})`,
+    );
   });
 });
 
