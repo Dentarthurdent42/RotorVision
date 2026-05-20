@@ -1,110 +1,100 @@
 # RotorVision
 
-A small 3D graphics engine that rotates with **geometric-algebra rotors**
-instead of quaternions.
+A small 3D graphics engine that rotates with **geometric-algebra rotors** instead of quaternions.
 
-Everything that turns in RotorVision — meshes, the scene-graph hierarchy, the
-camera rig, even the swept geometry of the torus knot — is rotated by a rotor
-through the sandwich product **v′ = R v R~**. There is not a single quaternion
-or rotation matrix in the transform path.
+Everything that turns in RotorVision — meshes, the scene-graph hierarchy, the camera rig, even the swept geometry of the torus knot — is rotated by a rotor through the sandwich product **v′ = R v R~**. The project is both a graphics demo and an argument that rotors are a clean, intuitive foundation for 3D transforms.
+
+## What it does
+
+RotorVision renders an interactive 3D scene powered by native ES modules and a custom engine. The demo includes:
+
+- a rotor-spun torus knot
+- orbiting satellites arranged in a scene graph
+- a camera rig driven by rotor-based transforms
+- an on-screen HUD showing the live rotor components
+- controls for pausing, wireframe mode, fog, and auto-orbit
+
+Instead of relying on quaternions in the transform pipeline, the engine uses **rotors from geometric algebra** as the primary rotation primitive.
 
 ## Why rotors?
 
-A **rotor** is an even-grade element of the 3D geometric algebra G3 — a scalar
-plus a bivector:
+A **rotor** is an even-grade element of 3D geometric algebra: a scalar plus bivector components. It carries the same amount of information as a unit quaternion, but it is expressed in terms of geometric objects — oriented planes — rather than abstract imaginary units.
 
+That gives the math a particularly satisfying interpretation:
+
+- rotations happen **in a plane**, not just around an axis
+- vectors and rotations live in the **same algebraic system**
+- composition is just **rotor multiplication**
+- rotating a vector uses the sandwich product **R v R~**
+
+RotorVision is a practical experiment in building a graphics pipeline around that viewpoint.
+
+## Features
+
+- **Rotor-based 3D transforms** throughout the engine
+- **Interactive canvas demo** with camera orbit and zoom
+- **Live rotor HUD** showing scalar and bivector terms
+- **Scene graph hierarchy** resolved through rotor composition
+- **Procedural geometry** including a torus-knot showcase object
+- **Matrix-free transform path** up to final projection / rendering interop
+- **Node-based test suite** for the geometric-algebra core and engine behavior
+
+## Project structure
+
+```text
+src/
+  math/
+    vec3.js        vectors
+    mat4.js        perspective / interop matrix utilities
+  ga/
+    bivector.js    oriented planes and wedge-product concepts
+    rotor.js       sandwich product, exp/log, slerp, composition
+  engine/
+    geometry.js    procedural meshes
+    mesh.js        mesh data
+    object3d.js    transform hierarchy with position, rotor, scale
+    camera.js      camera transform via reverse rotor
+    scene.js       root scene objects
+    renderer.js    rendering pipeline
+    engine.js      animation loop
+  index.js         public API re-exports
+  demo.js          showcase scene
 ```
-R = a + b23·e23 + b31·e31 + b12·e12
-```
-
-It carries the same four numbers as a unit quaternion and costs exactly the
-same to evaluate, but it is built from honest geometric objects rather than
-abstract symbols:
-
-| Quaternion | Rotor |
-| --- | --- |
-| `i, j, k` are abstract units *asserted* to square to -1 | `e23, e31, e12` are oriented **planes**; squaring to -1 is *derived* from the geometric product |
-| Rotates by embedding a vector as a "pure quaternion" in 4D | Rotates a vector that lives in the *same algebra* — no embedding |
-| A rotation is "about an axis" (a 3D-only accident) | A rotation is "in a plane" — the picture works in any dimension |
-| `q v q*` | `R v R~` |
-
-A rotor is constructed by exponentiating a bivector, and composing rotations is
-just multiplying rotors. See `src/ga/rotor.js` for the fully commented
-implementation, including the expanded sandwich product.
 
 ## Running the demo
 
-The demo is a set of native ES modules, so it needs to be served over HTTP:
+Serve the project locally over HTTP:
 
 ```bash
-npm start          # serves the folder at http://localhost:8000
+npm start
 ```
 
-Then open <http://localhost:8000>. You will see a rotor-spun torus knot, five
-satellites orbiting a shared parent node, and a moon nested one level deeper —
-the whole hierarchy resolved with rotor multiplication. Drag to orbit the
-camera, scroll to zoom, and watch the HUD report the knot's live rotor.
+Then open `http://localhost:8000` in your browser.
 
 ## Running the tests
 
-The geometric-algebra core has no browser dependencies and is covered by a
-suite that runs on Node's built-in test runner:
+The core math and engine pieces are testable outside the browser:
 
 ```bash
 npm test
 ```
 
-It checks the rotor algebra (sandwich product, composition, `exp`/`log`, slerp,
-the double cover), mesh winding, the scene-graph transforms, and the renderer
-pipeline through a headless mock canvas.
+## Tech stack
 
-## How it works
+- **JavaScript**
+- **Native ES modules**
+- **HTML Canvas**
+- **Custom geometric algebra math**
 
-```
-src/
-  math/
-    vec3.js        Grade-1 vectors — the things rotors act on
-    mat4.js        4×4 matrix, only for perspective + WebGL interop
-  ga/
-    bivector.js    Grade-2 oriented planes; the wedge product
-    rotor.js       The rotation primitive: sandwich product, exp/log, slerp
-  engine/
-    geometry.js    Procedural meshes (the torus knot sweeps its tube with rotors)
-    mesh.js        Raw vertex/face/line data
-    object3d.js    Scene-graph node with a (position, rotor, scale) transform
-    camera.js      A position + a rotor; the view transform is the reverse rotor
-    scene.js       Root node, camera and light
-    renderer.js    Software rasteriser on a 2D canvas (painter's algorithm)
-    engine.js      The requestAnimationFrame run loop
-  index.js         Barrel re-export of the public API
-  demo.js          The showcase scene
-```
+## Why this project exists
 
-The pipeline is deliberately matrix-free apart from the final perspective
-divide: vertices are placed in the world by rotors (`Object3D`), carried into
-camera space by the camera's reverse rotor (`Camera`), and only then projected.
+RotorVision is partly a rendering experiment and partly a mathematical one.
 
-## API sketch
+The goal is to show that geometric-algebra rotors are not just elegant on paper — they can directly power an interactive graphics engine. It is a way of making abstract math operational, visible, and testable in code.
 
-```js
-import { Rotor, Vec3, Bivector } from "./src/index.js";
+## Author
 
-// Rotate a vector 90° in the e1^e2 plane.
-const R = Rotor.fromPlaneAngle(new Bivector(0, 0, 1), Math.PI / 2);
-R.rotate(new Vec3(1, 0, 0));            // → Vec3(0, 1, 0)
-
-// The shortest rotation taking one direction onto another — no trig, no axis.
-Rotor.fromTo(Vec3.e1(), Vec3.e3());
-
-// Compose rotations by multiplying; interpolate them by slerp.
-const A = Rotor.fromAxisAngle(Vec3.e2(), 0.5);
-const B = Rotor.fromAxisAngle(Vec3.e1(), 1.2);
-A.mul(B);                                // apply B, then A
-A.slerp(B, 0.5);                         // halfway between the two
-
-// Hand the rotation to a matrix-based pipeline (e.g. WebGL) when you need to.
-Rotor.fromAxisAngle(Vec3.e2(), 1.0).toMatrix3();
-```
+Created by **Mathieu Poulin**.
 
 ## License
 
