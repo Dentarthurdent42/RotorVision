@@ -164,6 +164,32 @@ export const Geometry = {
       normals.push(normal);
     }
 
+    // The frame doesn't return to itself when carried around a closed curve —
+    // a closed loop on a curved manifold has nonzero *holonomy*. Without
+    // correction the wrap-around faces would stitch each vertex j to the
+    // vertex on the far side of the next ring. Measure the residual twist by
+    // closing the loop once more, then untwist evenly across every sample so
+    // the per-segment defect shrinks like 1/N.
+    if (curveSegments > 1) {
+      const closing = Rotor.fromTo(
+        tangents[curveSegments - 1],
+        tangents[0],
+      );
+      const closedNormal = closing.rotate(normals[curveSegments - 1]);
+      const binormal0 = tangents[0].cross(normals[0]).normalize();
+      const holonomy = Math.atan2(
+        closedNormal.dot(binormal0),
+        closedNormal.dot(normals[0]),
+      );
+      for (let i = 0; i < curveSegments; i++) {
+        const detwist = Rotor.fromAxisAngle(
+          tangents[i],
+          -holonomy * (i / curveSegments),
+        );
+        normals[i] = detwist.rotate(normals[i]).normalize();
+      }
+    }
+
     const vertices = [];
     const faces = [];
     for (let i = 0; i < curveSegments; i++) {

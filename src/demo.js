@@ -184,6 +184,16 @@ function updateHud() {
   hud.axis.textContent = `(${ax.x.toFixed(2)}, ${ax.y.toFixed(2)}, ${ax.z.toFixed(2)})`;
 }
 
+// --- Collapsible HUD (collapsed by default on small screens) ------------
+const hudPanel = document.getElementById("hud");
+const hudToggle = document.getElementById("hud-toggle");
+const compactScreen = window.matchMedia("(max-width: 720px)");
+if (compactScreen.matches) hudPanel.classList.add("hud--collapsed");
+hudToggle.addEventListener("click", () => {
+  const collapsed = hudPanel.classList.toggle("hud--collapsed");
+  hudToggle.setAttribute("aria-expanded", String(!collapsed));
+});
+
 // --- Controls -----------------------------------------------------------
 const btnPause = document.getElementById("btn-pause");
 const btnWire = document.getElementById("btn-wireframe");
