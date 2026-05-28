@@ -103,7 +103,8 @@ export class Renderer {
         });
       }
 
-      for (const [i, j] of mesh.lines) {
+      for (let li = 0; li < mesh.lines.length; li++) {
+        const [i, j] = mesh.lines[li];
         let a = cam[i];
         let b = cam[j];
         // Reject the segment only if *both* endpoints are on the wrong side
@@ -113,11 +114,14 @@ export class Renderer {
         if (a.z > -near) a = clipToNearPlane(a, b, near);
         else if (b.z > -near) b = clipToNearPlane(b, a, near);
         const depth = (a.z + b.z) / 2;
+        // Per-edge colours (used by 4D wireframes to tint by w) fall back to
+        // the material colour when absent.
+        const baseColor = mesh.lineColors ? mesh.lineColors[li] : mat.color;
         primitives.push({
           kind: "line",
           points: [project(a), project(b)],
           depth,
-          color: rgbToCss(applyFog(mat.color, depth, fogRGB, this.fog, camera.far)),
+          color: rgbToCss(applyFog(baseColor, depth, fogRGB, this.fog, camera.far)),
           renderOrder: mat.renderOrder ?? 0,
         });
       }
