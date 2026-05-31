@@ -145,7 +145,10 @@
         transform: translateX(-50%);
         padding: 9px;
         display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
         gap: 8px;
+        max-width: calc(100vw - 24px);
       }
       button {
         font-family: inherit;
@@ -228,53 +231,70 @@
       </button>
       <div class="hud__body" id="hud-body">
         <p class="tagline">
-          A 3D engine that rotates with geometric-algebra rotors — no quaternions.
+          One rotor sandwich product, v′ = R v R~, in 3D and 4D alike — no
+          quaternions, which only ever work in 3D.
         </p>
 
         <div class="readout">
           <span class="label">fps</span>
           <span class="value"><span id="hud-fps">0</span></span>
-          <span class="label">triangles</span>
+          <span class="label">primitives</span>
           <span class="value"><span id="hud-faces">0</span></span>
+          <span class="label">4D shape</span>
+          <span class="value"><span id="hud-shape">tesseract</span></span>
         </div>
 
-        <div class="rotor-line">Knot orientation rotor</div>
-        <div class="rotor-grid">
+        <div class="rotor-line">4D orientation rotor — six planes</div>
+        <div class="rotor-grid rotor-grid--4d">
           <div class="term">
-            <span class="basis scalar">scalar</span><span id="hud-a">+1.0000</span>
+            <span class="basis scalar">1</span><span id="hud-s">+1.0000</span>
+          </div>
+          <div class="term">
+            <span class="basis">e₁₂₃₄</span><span id="hud-b1234">+0.0000</span>
+          </div>
+          <div class="term">
+            <span class="basis">e₁₂</span><span id="hud-b12">+0.0000</span>
           </div>
           <div class="term">
             <span class="basis">e₂₃</span><span id="hud-b23">+0.0000</span>
           </div>
           <div class="term">
-            <span class="basis">e₃₁</span><span id="hud-b31">+0.0000</span>
+            <span class="basis">e₁₃</span><span id="hud-b13">+0.0000</span>
           </div>
           <div class="term">
-            <span class="basis">e₁₂</span><span id="hud-b12">+0.0000</span>
+            <span class="basis">e₂₄</span><span id="hud-b24">+0.0000</span>
+          </div>
+          <div class="term">
+            <span class="basis">e₁₄</span><span id="hud-b14">+0.0000</span>
+          </div>
+          <div class="term">
+            <span class="basis">e₃₄</span><span id="hud-b34">+0.0000</span>
           </div>
         </div>
 
         <div class="divider"></div>
 
-        <div class="readout">
-          <span class="label">rotation angle</span>
-          <span class="value"><span id="hud-angle">0.0°</span></span>
-          <span class="label">rotation axis</span>
-          <span class="value"><span id="hud-axis">(0, 1, 0)</span></span>
-        </div>
+        <p class="tagline" style="margin: 0">
+          Spinning in the <b style="color: var(--text)">xy</b> and
+          <b style="color: var(--text)">zw</b> planes at once — a 4D double
+          rotation. Edge colour tracks the w coordinate.
+        </p>
       </div>
     </div>
 
     <div id="controls" class="panel">
       <button id="btn-pause">Pause</button>
+      <button id="btn-shape">Shape</button>
       <button id="btn-wireframe">Wireframe</button>
       <button id="btn-fog">Fog</button>
       <button id="btn-orbit">Auto-orbit</button>
     </div>
 
     <div id="hint" class="panel">
-      <b>Drag</b> to orbit the camera · <b>scroll</b> to zoom.<br />
-      Every spin here is a rotor sandwich product <b>v′ = R v R~</b>.
+      <b>Drag</b> to orbit the camera · <b>scroll</b> to zoom ·
+      <b>Shape</b> cycles the 4D polytope.<br />
+      The tesseract turns in two orthogonal planes at once — impossible for a
+      quaternion.
     </div>
 
     <script type="module" src="./src/demo.js"></script>

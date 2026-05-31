@@ -94,10 +94,17 @@ export class Renderer {
         const depth = (c0.z + c1.z + c2.z) / 3;
         const points = [project(c0), project(c1), project(c2)];
         const color = this._shade(normal, mat.color, light, scene.ambient, depth, fogRGB);
-        primitives.push({ kind: wireframe ? "wire" : "fill", points, depth, color });
+        primitives.push({
+          kind: wireframe ? "wire" : "fill",
+          points,
+          depth,
+          color,
+          renderOrder: mat.renderOrder ?? 0,
+        });
       }
 
-      for (const [i, j] of mesh.lines) {
+      for (let li = 0; li < mesh.lines.length; li++) {
+        const [i, j] = mesh.lines[li];
         let a = cam[i];
         let b = cam[j];
         // Reject the segment only if *both* endpoints are on the wrong side
@@ -107,17 +114,27 @@ export class Renderer {
         if (a.z > -near) a = clipToNearPlane(a, b, near);
         else if (b.z > -near) b = clipToNearPlane(b, a, near);
         const depth = (a.z + b.z) / 2;
+        // Per-edge colours (used by 4D wireframes to tint by w) fall back to
+        // the material colour when absent.
+        const baseColor = mesh.lineColors ? mesh.lineColors[li] : mat.color;
         primitives.push({
           kind: "line",
           points: [project(a), project(b)],
           depth,
-          color: rgbToCss(applyFog(mat.color, depth, fogRGB, this.fog, camera.far)),
+          color: rgbToCss(applyFog(baseColor, depth, fogRGB, this.fog, camera.far)),
+          renderOrder: mat.renderOrder ?? 0,
         });
       }
     }
 
-    // Painter's algorithm: farthest (most negative camera z) first.
-    primitives.sort((a, b) => a.depth - b.depth);
+    // Painter's algorithm: lower-renderOrder layers first, and within each
+    // layer the farthest (most negative camera z) primitive first. The layer
+    // key is the escape hatch for cases where two primitives have overlapping
+    // depth ranges yet a clear front/back relationship — e.g. a floor that
+    // should sit behind every solid object even when their depths interleave.
+    primitives.sort(
+      (a, b) => a.renderOrder - b.renderOrder || a.depth - b.depth,
+    );
     this.stats.drawn = primitives.length;
 
     for (const prim of primitives) {
